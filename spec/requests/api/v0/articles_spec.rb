@@ -481,7 +481,7 @@ RSpec.describe "Api::V0::Articles", type: :request do
         expect(response).to have_http_status(:ok)
       end
 
-      it "returns success when requesting publiched articles with public token" do
+      it "returns success when requesting published articles with public token" do
         public_token = create(:doorkeeper_access_token, resource_owner: user, scopes: "public")
         get me_api_articles_path(status: :published), params: { access_token: public_token.token }
         expect(response.media_type).to eq("application/json")
@@ -626,6 +626,14 @@ RSpec.describe "Api::V0::Articles", type: :request do
         headers = { "api-key" => api_secret.secret, "content-type" => "application/json" }
         string_params = "this_string_is_definitely_not_a_hash"
         post api_articles_path, params: { article: string_params }.to_json, headers: headers
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body["error"]).to be_present
+      end
+
+      it "fails if params are unwrapped" do
+        headers = { "api-key" => api_secret.secret, "content-type" => "application/json" }
+        post api_articles_path, params: { body_markdown: "Body", "title": "Title" }.to_json, headers: headers
 
         expect(response).to have_http_status(:unprocessable_entity)
         expect(response.parsed_body["error"]).to be_present
